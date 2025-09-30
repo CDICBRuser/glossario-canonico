@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+// PUT - atualizar termo existente
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const data = await req.json();
     const termoId = Number(id);
     if (isNaN(termoId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
@@ -22,9 +23,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+// DELETE - apagar termo
+export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const termoId = Number(id);
     if (isNaN(termoId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
 
@@ -35,4 +37,3 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
