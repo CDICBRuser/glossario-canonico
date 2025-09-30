@@ -15,8 +15,10 @@ export default function Home() {
   const [editId, setEditId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ termo: "", definicao: "", fonte: "" });
   const [search, setSearch] = useState("");
+  const [feedback, setFeedback] = useState(""); // Mensagem temporária
+  const [destaqueId, setDestaqueId] = useState<number | null>(null); // destaque de card atualizado/criado
+  const [searchDestaqueIds, setSearchDestaqueIds] = useState<number[]>([]); // NOVO: destaque de busca
 
-  // Carregar termos da API
   async function carregar() {
     const res = await fetch("/api/termos");
     const data: Termo[] = await res.json();
@@ -28,18 +30,29 @@ export default function Home() {
     carregar();
   }, []);
 
-  // Criar novo termo
+  function mostrarFeedback(msg: string) {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(""), 3000);
+  }
+
+  function destacarCard(id: number) {
+    setDestaqueId(id);
+    setTimeout(() => setDestaqueId(null), 3000);
+  }
+
   async function criarNovo(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/termos", {
+    const res = await fetch("/api/termos", {
       method: "POST",
       body: JSON.stringify(novoForm),
     });
+    const novoTermo = await res.json();
     setNovoForm({ termo: "", definicao: "", fonte: "" });
     carregar();
+    mostrarFeedback("✅ Termo adicionado!");
+    destacarCard(novoTermo.id);
   }
 
-  // Atualizar termo existente
   async function atualizar(e: React.FormEvent) {
     e.preventDefault();
     if (editId !== null) {
@@ -50,24 +63,38 @@ export default function Home() {
       setEditId(null);
       setEditForm({ termo: "", definicao: "", fonte: "" });
       carregar();
+      mostrarFeedback("✏️ Termo atualizado!");
+      destacarCard(editId);
     }
   }
 
-  // Apagar termo
   async function apagar(id: number) {
     if (confirm("Deseja realmente apagar este termo?")) {
       await fetch(`/api/termos/${id}`, { method: "DELETE" });
       carregar();
+      mostrarFeedback("🗑️ Termo apagado!");
     }
   }
 
-  // Iniciar edição
   function editar(t: Termo) {
     setEditId(t.id);
     setEditForm({ termo: t.termo, definicao: t.definicao, fonte: t.fonte });
   }
 
-  // Filtrar termos pela busca
+  // Destaque dos termos encontrados na busca
+  useEffect(() => {
+    if (search) {
+      const ids = termos
+        .filter((t) => t.termo.toLowerCase().includes(search.toLowerCase()))
+        .map((t) => t.id);
+      setSearchDestaqueIds(ids);
+      const timeout = setTimeout(() => setSearchDestaqueIds([]), 3000); // destaque some em 3s
+      return () => clearTimeout(timeout);
+    } else {
+      setSearchDestaqueIds([]);
+    }
+  }, [search, termos]);
+
   const termosFiltrados = termos.filter((t) =>
     t.termo.toLowerCase().includes(search.toLowerCase())
   );
@@ -78,7 +105,12 @@ export default function Home() {
         📖 Glossário Canônico
       </h1>
 
-      {/* Campo de busca */}
+      {feedback && (
+        <div className="bg-green-200 text-green-800 p-2 rounded mb-4 text-center font-semibold">
+          {feedback}
+        </div>
+      )}
+
       <input
         className="border p-3 rounded-lg w-full mb-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         placeholder="Buscar termo..."
@@ -86,7 +118,6 @@ export default function Home() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* Lista de termos */}
       <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {/* Card de criação */}
         <li className="bg-white p-4 rounded-lg shadow-md flex flex-col gap-3">
@@ -125,7 +156,9 @@ export default function Home() {
           termosFiltrados.map((t) => (
             <li
               key={t.id}
-              className="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between hover:shadow-lg transition"
+              className={`bg-white p-4 rounded-lg shadow-md flex flex-col justify-between hover:shadow-lg transition
+                ${destaqueId === t.id ? "border-4 border-yellow-400" : ""}
+                ${searchDestaqueIds.includes(t.id) ? "ring-4 ring-blue-300" : ""}`} // NOVO: destaque da busca
             >
               {editId === t.id ? (
                 <form onSubmit={atualizar} className="flex flex-col gap-2">
