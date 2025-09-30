@@ -4,9 +4,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // PUT - atualizar termo existente
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params; // <-- await aqui
     const data = await req.json();
     const termoId = Number(id);
     if (isNaN(termoId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
@@ -24,9 +24,9 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
 }
 
 // DELETE - apagar termo
-export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params; // <-- await aqui
     const termoId = Number(id);
     if (isNaN(termoId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
 
