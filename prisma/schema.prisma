@@ -1,5 +1,5 @@
 datasource db {
-  provider = "prisma-client-js"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
